@@ -1,0 +1,265 @@
+import os
+
+from ament_index_python.packages import get_package_share_directory
+from launch import LaunchDescription
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
+from launch.conditions import IfCondition
+from launch.launch_description_sources import FrontendLaunchDescriptionSource, PythonLaunchDescriptionSource
+from launch.substitutions import LaunchConfiguration
+from launch_ros.actions import Node
+
+
+def generate_launch_description():
+    use_sim_time = LaunchConfiguration("use_sim_time", default="false")
+    with_rviz2 = LaunchConfiguration("rviz2", default=True)
+    with_slamtoolbox = LaunchConfiguration("with_slamtoolbox", default=False)
+    with_fastlio = LaunchConfiguration("with_fastlio", default=False)
+    with_nav2 = LaunchConfiguration("nav2", default=False)
+
+    urdf_file_name = "go2.urdf"
+    urdf = os.path.join(get_package_share_directory("go2_nav"), "urdf", urdf_file_name)
+    with open(urdf, "r") as infp:
+        robot_desc = infp.read()
+
+    static_tfs = [
+        Node(
+            package="tf2_ros",
+            executable="static_transform_publisher",
+            name="static_transform_publisher",
+            arguments=["0", "0", "-0.1", "0", "0", "0", "base_link", "base_footprint"],
+            output="screen",
+        ),
+        Node(
+            package="tf2_ros",
+            executable="static_transform_publisher",
+            name="map2odom",
+            arguments=["0", "0", "0", "0", "0", "0", "map", "odom"],
+            output="screen",
+        ),
+        Node(
+            package="tf2_ros",
+            executable="static_transform_publisher",
+            name="static_transform_publisher",
+            arguments=["0", "0", "0", "0", "0", "0", "odom", "camera_init"],
+            output="screen",
+            condition=IfCondition(with_fastlio),
+        ),
+        Node(
+            package="tf2_ros",
+            executable="static_transform_publisher",
+            name="static_transform_publisher",
+            arguments=["0", "0", "0", "0", "0", "0", "body", "base_link"],
+            output="screen",
+            condition=IfCondition(with_fastlio),
+        ),
+        Node(
+            package="tf2_ros",
+            executable="static_transform_publisher",
+            name="tf_livox_base",
+            arguments=["0.187", "0", "0.0803", "0", "0.2", "0", "base_link", "livox_frame"],
+            parameters=[{"publish_frequency": 100.0}],
+            output="screen",
+        ),
+    ]
+
+    dds_forward = Node(
+        package="go2_nav",
+        executable="dds_forward",
+        name="dds_forward_node",
+        output="screen",
+        parameters=[{"forward_lidar": False}],
+    )
+    odom2tf = Node(
+        package="go2_nav",
+        executable="odom2tf",
+        name="odom2tf",
+        output="screen",
+        parameters=[
+            {
+                "freq": 50.0,
+                # "odom_topic": "Odometry",
+                # "odom_topic": "/utlidar/robot_odom",
+                "odom_topic": "/odom",
+                "parent_frame": "odom",
+                "child_frame": "base_link",
+            }
+        ],
+    )
+    rviz_node = Node(
+        package="rviz2",
+        executable="rviz2",
+        name="rviz2",
+        output="screen",
+        arguments=[
+            "-d",
+            "/home/unitree/dev_ws/src/go2_nav/config/nav.rviz",
+        ],
+        condition=IfCondition(with_rviz2),
+    )
+    robot_state_pub_node = Node(
+        package="robot_state_publisher",
+        executable="robot_state_publisher",
+        name="robot_state_publisher",
+        output="screen",
+        parameters=[{"use_sim_time": use_sim_time, "robot_description": robot_desc}],
+        arguments=[urdf],
+    )
+
+    lidar2scan_node = Node(
+        package="pointcloud_to_laserscan",
+        executable="pointcloud_to_laserscan_node",
+        name="pointcloud_to_laserscan",
+        remappings=[
+            # ("cloud_in", "/utlidar/cloud_deskewed"),
+            # ("cloud_in", "/livox/points"),
+            # ("cloud_in", "/livox/lidar"),
+            ("cloud_in", "/livox/pointcloud2"),
+            ("scan", "scan"),
+        ],
+        parameters=[
+            {
+                # "target_frame": "odom",
+                "target_frame": "base_link",
+                "min_height": 0.2,
+                "max_height": 0.4,
+                "qos_overrides.cloud_in.reliability": "best_effort",
+                "qos_overrides.scan.reliability": "reliable",
+            }
+        ],
+        output="screen",
+    )
+    # slam_toolbox_config = os.path.join(get_package_share_directory("go2_nav"), "config", "slamtoolbox.yaml")
+    slam_toolbox_config = "/home/unitree/dev_ws/src/go2_nav/config/slamtoolbox.yaml"
+    slam_toolbox = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            [os.path.join(get_package_share_directory("slam_toolbox"), "launch", "online_async_launch.py")]
+        ),
+        condition=IfCondition(with_slamtoolbox),
+        launch_arguments={
+            "slam_params_file": slam_toolbox_config,
+            "use_sim_time": use_sim_time,
+        }.items(),
+    )
+    
+    yamlmap_file = "/home/unitree/dev_ws/src/go2_nav/maps/e4a_3f.yaml"
+    nav2_config = "/home/unitree/dev_ws/src/go2_nav/config/nav2_params.yaml"
+
+    amcl_node = Node(
+        package="nav2_amcl",
+        executable="amcl",
+        name="amcl",
+        output="screen",
+        parameters=[
+            nav2_config,
+            {
+                "map": yamlmap_file,
+                "use_sim_time": use_sim_time,
+                "qos_overrides./scan.reliability": "best_effort",
+                "qos_overrides./map.reliability": "reliable",
+            },
+        ],
+    )
+    map_server_node = Node(
+        package="nav2_map_server",
+        executable="map_server",
+        name="map_server",
+        output="screen",
+        parameters=[{"yaml_filename": yamlmap_file}],
+    )
+
+    # driver_file = "msg_MID360_launch.py" if IfCondition(with_fastlio) else "rviz_MID360_launch.py"
+    # driver_file = "rviz_MID360_launch.py"
+    driver_file = "msg_MID360_launch.py"
+    livox_ros_driver = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            [os.path.join(get_package_share_directory("livox_ros_driver2"), "launch_ROS2", driver_file)]
+        ),
+        launch_arguments={
+            "livox_ros_driver2_rviz": "false",
+        }.items(),
+    )
+    livox2pc = Node(
+        package="livox_to_pointcloud2",
+        executable="livox_to_pointcloud2_node",
+        name="livox_to_pointcloud2_node",
+        output="screen",
+        parameters=[],
+    )
+    pcl_voxel_node = Node(
+        package="pcl_ros",
+        executable="filter_voxel_grid_node",
+        name="filter_voxel_grid_node",
+        parameters=[
+            {
+                "leaf_size": 0.1,
+                "filter_field_name": "z",
+                "filter_limit_min": 0.0,
+                "filter_limit_max": 0.7,
+                "filter_limit_negative": False,
+            }
+        ],
+        remappings=[
+            ("input", "/livox/pointcloud2"),
+            ("output", "/livox/pointcloud2_pcl"),
+        ],
+    )
+
+    fast_lio = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            [os.path.join(get_package_share_directory("fast_lio"), "launch", "mapping.launch.py")]
+        ),
+        condition=IfCondition(with_fastlio),
+        launch_arguments={"config_file": "mid360.yaml", "rviz": "false"}.items(),
+    )
+
+    nav2 = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            [os.path.join(get_package_share_directory("nav2_bringup"), "launch", "bringup_launch.py")]
+        ),
+        condition=IfCondition(with_nav2),
+        launch_arguments={
+            "params_file": nav2_config,
+            "use_sim_time": use_sim_time,
+            "autostart": "true",
+            "map": yamlmap_file,
+        }.items(),
+    )
+
+    lifecycle_manager = Node(
+        package="nav2_lifecycle_manager",
+        executable="lifecycle_manager",
+        name="lifecycle_manager_navigation",
+        output="screen",
+        parameters=[
+            {"use_sim_time": use_sim_time},
+            {"autostart": True},
+            {
+                "node_names": [
+                    # "amcl",
+                    "map_server",
+                ]
+            },
+            {"automatic_restart": True},
+        ],
+    )
+
+    with_amcl_test = True
+    amcl_test = [amcl_node, lifecycle_manager, map_server_node] if with_amcl_test else []
+
+    return LaunchDescription(
+        [
+            *static_tfs,
+            # robot_state_pubnode,
+            # livox_ros_driver,
+            # pcl_voxel_node,
+            # ---
+            odom2tf,
+            # lidar2scan_node,
+            *amcl_test,
+            # ---
+            fast_lio,
+            slam_toolbox,
+            nav2,
+            rviz_node,
+        ]
+    )
