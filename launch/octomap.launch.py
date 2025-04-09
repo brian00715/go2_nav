@@ -26,16 +26,17 @@ def generate_launch_description():
             ("/cloud_in", "/utlidar/cloud_deskewed"),
         ],
     )
-    tf_pub_node = Node(
-        
-    )
+    tf_pub_node = Node()
 
     rviz_node = Node(
         package="rviz2",
         executable="rviz2",
         name="rviz2",
         output="screen",
-        arguments=["-d", "/home/unitree/unitree_ros2/dev_ws/src/go2_nav/launch/config/default.rviz"],
+        arguments=[
+            "-d",
+            "/home/unitree/unitree_ros2/dev_ws/src/go2_nav/launch/config/default.rviz",
+        ],
     )
     return LaunchDescription(
         [

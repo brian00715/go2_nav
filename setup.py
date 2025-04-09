@@ -28,6 +28,6 @@ setup(
             "dds_forward = go2_nav.dds_forward:main",
             "teleop_relay = go2_nav.teleop_relay:main",
             "odom2tf = go2_nav.odom2tf:main",
-            ],
+        ],
     },
 )

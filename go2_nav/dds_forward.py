@@ -31,7 +31,7 @@ class DDSForward(Node):
 
         self.get_logger().info("DDSForward has been started")
 
-    def odom_callback(self, msg:Odometry):
+    def odom_callback(self, msg: Odometry):
         t = TransformStamped()
         t.header.stamp = self.get_clock().now().to_msg()
         t.header.frame_id = "odom"

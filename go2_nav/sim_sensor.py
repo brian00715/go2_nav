@@ -23,6 +23,7 @@ TF_MAP1_TO_MAP2_PXL = np.array(
     ]
 )
 
+
 @njit(fastmath=True)
 def collision_check(x0, y0, x1, y1, gridmap, update_scan=False, lidar_scan=None, edge_pad_num=10):
     """
@@ -110,10 +111,11 @@ def sensor_work(robot_position, sensor_range, lidar_scan, ground_truth):
         collision_check(x0, y0, x1, y1, ground_truth, True, lidar_scan)
     return lidar_scan
 
+
 class SimSensor(Node):
-    def __init__(self,map_real,map_model,map_config):
+    def __init__(self, map_real, map_model, map_config):
         super().__init__("sim_sensor")
-        
+
         self.map_origin = np.array(map_config["origin"])[:2]
         self.map_resolution = float(map_config["resolution"])
         self.map_real = np.array(Image.open(map_real))
@@ -125,7 +127,7 @@ class SimSensor(Node):
 
         self.robot_location = np.array([0, 0])
         self.robot_location_pxl = np.array([0, 0])
-        
+
         self.lidar_scan = np.ones(self.map_real_size) * 127
 
         self.tf_buffer = Buffer()
@@ -134,15 +136,15 @@ class SimSensor(Node):
         self.timer = self.create_timer(0.1, self.timer_callback)
 
         self.get_logger().info("Map to base_link TF listener node started")
-        
+
         # Create a separate, faster timer just for GUI updates
         self.gui_timer = self.create_timer(0.01, self.gui_callback)
         self.display_img = None
-        cv2.namedWindow('lidar_scan', cv2.WINDOW_NORMAL)
-        
+        cv2.namedWindow("lidar_scan", cv2.WINDOW_NORMAL)
+
     def gui_callback(self):
         if self.display_img is not None:
-            cv2.imshow('lidar_scan', self.display_img)
+            cv2.imshow("lidar_scan", self.display_img)
             cv2.waitKey(1)
 
     def timer_callback(self):
@@ -151,23 +153,25 @@ class SimSensor(Node):
             translation = trans.transform.translation
             rotation = trans.transform.rotation
             # self.get_logger().info(f"pos | x: {translation.x:.2f} | y: {translation.y:.2f}")
-            
+
             coord_phi = np.array([translation.x, translation.y])
-            coord_map1_phi= coord_phi- self.map_origin
-            coord_map1_phi = [coord_map1_phi[0],coord_map1_phi[1],1]
+            coord_map1_phi = coord_phi - self.map_origin
+            coord_map1_phi = [coord_map1_phi[0], coord_map1_phi[1], 1]
             # Note: In image coordinates, origin is at top-left, y-axis points down
-            coord_map1_pxl = np.array([
-                coord_map1_phi[0] / self.map_resolution,  
-                self.map_real_size[0] - coord_map1_phi[1] / self.map_resolution  # Flip y-axis
-            ])
-            
+            coord_map1_pxl = np.array(
+                [
+                    coord_map1_phi[0] / self.map_resolution,
+                    self.map_real_size[0] - coord_map1_phi[1] / self.map_resolution,  # Flip y-axis
+                ]
+            )
+
             coord_map2_pxl = np.dot(TF_MAP1_TO_MAP2_PXL, [coord_map1_pxl[0], coord_map1_pxl[1], 1])[0:2]
             coord_map2_pxl = coord_map2_pxl.astype(np.uint16)
             # self.get_logger().info(f"pos | map1: {coord_map1_phi[:2]} | coord_map2_pxl: {coord_map2_pxl}")
-            
+
             self.robot_location_pxl = coord_map2_pxl
             self.lidar_scan = sensor_work(self.robot_location_pxl, 100, self.lidar_scan, self.map_model)
-            
+
             ratio = 0.8
             img_show = self.lidar_scan.copy()
             cv2.circle(img_show, tuple(self.robot_location_pxl), 5, (0, 0, 255), -1)
@@ -175,21 +179,21 @@ class SimSensor(Node):
             img_scale = img_scale.astype(np.uint8)
             img_scale = cv2.cvtColor(img_scale, cv2.COLOR_GRAY2BGR)
             self.display_img = img_scale
-                
+
         except Exception as e:
             self.get_logger().warning(f"Error: {str(e)}")
 
 
 def main(args=None):
     rclpy.init(args=args)
-    mappath="/home/unitree/dev_ws/src/go2_nav/maps/"
-    mapname="e4a_3f"
+    mappath = "/home/unitree/dev_ws/src/go2_nav/maps/"
+    mapname = "e4a_3f"
     map_model = os.path.join(mappath, mapname + "_model.png")
     map_real = os.path.join(mappath, mapname + ".png")
     map_config = yaml.safe_load(open(os.path.join(mappath, mapname + ".yaml")))
-    
+
     if 1:
-        node = SimSensor(map_real,map_model,map_config)
+        node = SimSensor(map_real, map_model, map_config)
         try:
             rclpy.spin(node)
         except KeyboardInterrupt:
@@ -202,12 +206,13 @@ def main(args=None):
         ground_truth = np.array(Image.open(map_real))
         ground_truth = (ground_truth > 210).astype(np.uint8) * 254 + 1
         map_gt_size = ground_truth.shape
-        plt.imsave(output_path+"/ground_truth.png", ground_truth, cmap="gray")
+        plt.imsave(output_path + "/ground_truth.png", ground_truth, cmap="gray")
 
         robot_location = np.array([300, 600])
         lidar_scan = np.ones(map_gt_size) * 127
         lidar_scan = sensor_work(robot_location, 100, lidar_scan, ground_truth)
-        plt.imsave(output_path+"/lidar_scan.png", lidar_scan, cmap="gray")
+        plt.imsave(output_path + "/lidar_scan.png", lidar_scan, cmap="gray")
+
 
 if __name__ == "__main__":
     main()
