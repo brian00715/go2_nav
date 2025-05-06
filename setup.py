@@ -14,7 +14,7 @@ setup(
         (os.path.join("share", package_name, "launch"), glob(os.path.join("launch", "*launch.[pxy][yma]*"))),
         (os.path.join("share", package_name, "config"), glob(os.path.join("config", "**"))),
         (os.path.join("share", package_name, "urdf"), glob(os.path.join("urdf", "**"))),
-        (os.path.join("share", package_name, "scripts"), glob(os.path.join("scripts", "**"))),
+        (os.path.join("share", package_name, "scripts"), glob(os.path.join("scripts", "*.sh,*.py"))),
     ],
     install_requires=["setuptools"],
     zip_safe=True,
@@ -28,6 +28,7 @@ setup(
             "dds_forward = go2_nav.dds_forward:main",
             "teleop_relay = go2_nav.teleop_relay:main",
             "odom2tf = go2_nav.odom2tf:main",
+            "cmd_vel_to_sport = go2_nav.cmd_vel_to_sport:main",
         ],
     },
 )

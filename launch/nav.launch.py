@@ -140,7 +140,7 @@ def generate_launch_description():
         name="map_server",
         output="screen",
         parameters=[{"yaml_filename": map_yaml},
-                    {"frame_id": "map2"},],
+                    {"frame_id": "map_real"},],
     )
     lifecycle_nodes = ['map_server']
     lifecycle_manager = Node(
@@ -159,17 +159,17 @@ def generate_launch_description():
         remappings=[
             # ("cloud_in", "/utlidar/cloud_deskewed"),
             # ("cloud_in", "/livox/points"),
-            # ("cloud_in", "/livox/lidar"),
+            ("cloud_in", "/livox/lidar"),
             # ("cloud_in", "/livox/pointcloud2"),
-            ("cloud_in", "/aligned_points"),
+            # ("cloud_in", "/aligned_points"),
             ("scan", "scan"),
         ],
         parameters=[
             {
                 # "target_frame": "odom",
-                # "target_frame": "base_link",
+                "target_frame": "base_link",
                 # "target_frame": "livox_frame",
-                "target_frame": "map2",
+                # "target_frame": "map_loc",
                 "min_height": 0.2,
                 "max_height": 0.4,
                 "qos_overrides.cloud_in.reliability": "best_effort",
@@ -194,21 +194,28 @@ def generate_launch_description():
             package="tf2_ros",
             executable="static_transform_publisher",
             name="tf1",
-            arguments=["0", "0", "0", "0", "-0.16", "0", "map", "map2"],
+            arguments=["0", "0", "0", "0", "0.16", "0", "map_real", "map"],
             output="screen",
         ),
         Node(
             package="tf2_ros",
             executable="static_transform_publisher",
             name="tf2",
-            arguments=["0","0","0","0","0","0", "map2", "odom"],
+            arguments=["0","0","0","0","0","0", "map", "odom"],
             output="screen",
         ),
         Node(
             package="tf2_ros",
             executable="static_transform_publisher",
             name="tf3",
-            arguments=["0", "0", "-0.1", "0", "0", "0", "base_footprint", "base_link"],
+            arguments=["0", "0", "-0.2", "0", "0", "0", "base_link", "base_footprint"],
+            output="screen",
+        ),
+        Node(
+            package="tf2_ros",
+            executable="static_transform_publisher",
+            name="baselink2vehicle",
+            arguments=["0", "0", "0", "0", "0", "0", "base_link", "vehicle"],
             output="screen",
         ),
         Node(
@@ -219,6 +226,22 @@ def generate_launch_description():
             # arguments=["0", "0", "0.2", "0", "-0.1", "0.2", "base_link", "livox_frame"],
             output="screen",
         ),
+
+        # Node(
+        #     package="tf2_ros",
+        #     executable="static_transform_publisher",
+        #     name="tf3",
+        #     arguments=["0", "0", "0.1", "0", "0", "0", "base_link", "base_footprint"],
+        #     output="screen",
+        # ),
+        # Node(
+        #     package="tf2_ros",
+        #     executable="static_transform_publisher",
+        #     name="tf4",
+        #     arguments=["-0.187", "0", "-0.0803", "0", "-0.2", "0", "livox_frame", "base_link"],
+        #     output="screen",
+        # ),
+
     ]
     odom2tf = Node(
         package="go2_nav",
@@ -230,8 +253,9 @@ def generate_launch_description():
                 "freq": 50.0,
                 # "odom_topic": "/utlidar/robot_odom",
                 "odom_topic": "/odom",
-                "parent_frame": "odom",
-                "child_frame": "base_footprint",
+                "parent_frame": "map",
+                # "child_frame": "base_footprint",
+                "child_frame": "base_link",
             }
         ],
     )
