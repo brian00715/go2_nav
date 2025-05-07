@@ -29,6 +29,7 @@ setup(
             "teleop_relay = go2_nav.teleop_relay:main",
             "odom2tf = go2_nav.odom2tf:main",
             "cmd_vel_to_sport = go2_nav.cmd_vel_to_sport:main",
+            "waypoint2nav2 = go2_nav.waypoint2nav2:main",
         ],
     },
 )
