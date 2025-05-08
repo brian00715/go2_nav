@@ -14,7 +14,7 @@ setup(
         (os.path.join("share", package_name, "launch"), glob(os.path.join("launch", "*launch.[pxy][yma]*"))),
         (os.path.join("share", package_name, "config"), glob(os.path.join("config", "**"))),
         (os.path.join("share", package_name, "urdf"), glob(os.path.join("urdf", "**"))),
-        (os.path.join("share", package_name, "scripts"), glob(os.path.join("scripts", "*.sh,*.py"))),
+        (os.path.join("share", package_name, "scripts"), glob(os.path.join("scripts", "*.py"))),
     ],
     install_requires=["setuptools"],
     zip_safe=True,

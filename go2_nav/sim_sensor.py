@@ -17,9 +17,12 @@ from tf2_ros import Buffer, TransformListener
 
 TF_MAP1_TO_MAP2_PXL = np.array(
     [
-        [9.98952971e-01, 5.50242692e-02, -1.26839473e02],
-        [-5.55691195e-02, 9.98607084e-01, -8.74151475e01],
-        [-1.26192709e-06, 2.00148749e-08, 1.00000000e00],
+        # [9.98952971e-01, 5.50242692e-02, -1.26839473e02],
+        # [-5.55691195e-02, 9.98607084e-01, -8.74151475e01],
+        # [-1.26192709e-06, 2.00148749e-08, 1.00000000e00],
+        [9.98449836e-01, 1.00700868e-02, -5.22892986e00],
+        [-1.16006916e-02, 1.00028136e00, -1.19019484e01],
+        [-2.01684029e-06, 2.00056733e-07, 1.00000000e00],
     ]
 )
 
@@ -189,8 +192,8 @@ def main(args=None):
     mappath = "/home/unitree/dev_ws/src/go2_nav/maps/"
     mapname = "e4a_3f"
     map_model = os.path.join(mappath, mapname + "_model.png")
-    map_real = os.path.join(mappath, mapname + ".png")
-    map_config = yaml.safe_load(open(os.path.join(mappath, mapname + ".yaml")))
+    map_real = os.path.join(mappath, mapname + "_adjust.png")
+    map_config = yaml.safe_load(open(os.path.join(mappath, mapname + "_adjust.yaml")))
 
     if 1:
         node = SimSensor(map_real, map_model, map_config)

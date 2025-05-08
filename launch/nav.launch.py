@@ -86,7 +86,7 @@ def generate_launch_description():
     )
 
     rviz_cmd = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(os.path.join(launch_dir, "rviz_launch.py")),
+        PythonLaunchDescriptionSource(os.path.join(launch_dir, "rviz.launch.py")),
         condition=IfCondition(use_rviz),
         launch_arguments={"namespace": "", "use_namespace": "False", "rviz_config": rviz_config_file}.items(),
     )
@@ -132,6 +132,7 @@ def generate_launch_description():
         name="pointcloud_to_laserscan",
         remappings=[
             # ("cloud_in", "/utlidar/cloud_deskewed"),
+            # ("cloud_in", "/utlidar/cloud"),
             # ("cloud_in", "/livox/points"),
             ("cloud_in", "/livox/lidar"),
             # ("cloud_in", "/livox/pointcloud2"),
@@ -140,9 +141,10 @@ def generate_launch_description():
         ],
         parameters=[
             {
-                # "target_frame": "odom",
-                # "target_frame": "livox_frame",
-                "target_frame": "base_link",
+                # "target_frame": "map",
+                # "target_frame": "utlidar_lidar",
+                "target_frame": "livox_frame",
+                # "target_frame": "base_link",
                 "min_height": 0.2,
                 "max_height": 0.4,
                 "qos_overrides.cloud_in.reliability": "best_effort",
@@ -199,6 +201,13 @@ def generate_launch_description():
             arguments=["-0.187", "0", "-0.0803", "0", "-0.16", "0", "livox_frame", "base_link"],
             output="screen",
         ),
+        Node(
+            package="tf2_ros",
+            executable="static_transform_publisher",
+            name="tf5",
+            arguments=["0.289", "0", "-0.047", "3.142", "0.263", "3.142", "base_link", "utlidar_lidar"],
+            output="screen",
+        ),
     ]
 
     odom2tf = Node(
@@ -239,7 +248,7 @@ def generate_launch_description():
     )
 
     odom_fuse_node = Node(
-        package="go2_nav",
+        package="utils_pkg",
         executable="odom_fuse",
         name="odom_fuse_node",
         output="screen",
