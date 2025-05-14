@@ -39,7 +39,7 @@ class CmdVelToSportNode(Node):
         self.cmd_vel_sub = self.create_subscription(
             TwistStamped if self.ros_version == "ros1" else Twist, "cmd_vel", self.cmd_vel_callback, 10
         )
-        # self.low_state_sub = self.create_subscription(LowState, "/lowstate", self.lowstate_callback, 10)
+        self.low_state_sub = self.create_subscription(LowState, "/lowstate", self.lowstate_callback, 10)
 
         self.pause_pub = False
 
