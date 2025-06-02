@@ -47,13 +47,16 @@ class CmdVelToSportNode(Node):
 
     def lowstate_callback(self, msg):
         joystick = msg.wireless_remote
-        if joystick[2] == JotStickButton.R2 + JotStickButton.L2:
-            self.get_logger().info("R2+L2 pressed, pauseing publishing")
+        # if joystick[2] == JotStickButton.R2 + JotStickButton.L2:
+        if joystick[2] == JotStickButton.R2:
+            self.get_logger().info("R2 pressed, pauseing publishing")
             self.pause_pub = True
             sport_msg = self.sport_client.move(0, 0, 0)
             self.sport_pub.publish(sport_msg)
-        if joystick[3] == JotStickButton.A:
-            self.get_logger().info("A pressed, resuming publishing")
+        # if joystick[3] == JotStickButton.A:
+            # self.get_logger().info("A pressed, resuming publishing")
+        if joystick[2] == JotStickButton.R1:
+            self.get_logger().info("R1 pressed, resuming publishing")
             self.pause_pub = False
 
     def cmd_vel_callback(self, msg):

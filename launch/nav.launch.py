@@ -14,10 +14,8 @@ def generate_launch_description():
     nav_dir = "/home/unitree/dev_ws/src/go2_nav"
     launch_dir = os.path.join(nav_dir, "launch")
 
-    slam = LaunchConfiguration("slam")
     namespace = LaunchConfiguration("namespace")
     use_namespace = LaunchConfiguration("use_namespace")
-    map_yaml_file = LaunchConfiguration("map")
     use_sim_time = LaunchConfiguration("use_sim_time")
     params_file = LaunchConfiguration("params_file")
     default_bt_xml_filename = LaunchConfiguration("default_bt_xml_filename")
@@ -33,12 +31,7 @@ def generate_launch_description():
     declare_use_namespace_cmd = DeclareLaunchArgument(
         "use_namespace", default_value="false", description="Whether to apply a namespace to the navigation stack"
     )
-    declare_slam_cmd = DeclareLaunchArgument("slam", default_value="False", description="Whether run a SLAM")
-    declare_map_yaml_cmd = DeclareLaunchArgument(
-        "map",
-        default_value=os.path.join(nav_dir, "maps", "e4a_3f.yaml"),
-        description="Full path to map file to load",
-    )
+
     declare_use_sim_time_cmd = DeclareLaunchArgument(
         "use_sim_time", default_value="false", description="Use simulation (Gazebo) clock if true"
     )
@@ -96,8 +89,6 @@ def generate_launch_description():
         launch_arguments={
             "namespace": namespace,
             "use_namespace": use_namespace,
-            "slam": slam,
-            "map": map_yaml_file,
             "use_sim_time": use_sim_time,
             "params_file": params_file,
             "default_bt_xml_filename": default_bt_xml_filename,
@@ -106,7 +97,8 @@ def generate_launch_description():
     )
 
     # map_yaml = "/home/unitree/dev_ws/src/go2_nav/maps/e4a_3f.yaml"
-    map_yaml = "/home/unitree/dev_ws/src/go2_nav/maps/e4a_3f_adjust.yaml"
+    # map_yaml = "/home/unitree/dev_ws/src/go2_nav/maps/e4a_3f_nav.yaml"
+    map_yaml = "/home/unitree/dev_ws/src/go2_nav/maps/tlab_6f_nav.yaml"
     map_server_node = Node(
         package="nav2_map_server",
         executable="map_server",
@@ -269,8 +261,6 @@ def generate_launch_description():
 
     ld.add_action(declare_namespace_cmd)
     ld.add_action(declare_use_namespace_cmd)
-    ld.add_action(declare_slam_cmd)
-    ld.add_action(declare_map_yaml_cmd)
     ld.add_action(declare_use_sim_time_cmd)
     ld.add_action(declare_nav_params_file_cmd)
     ld.add_action(declare_bt_xml_cmd)
